@@ -1,0 +1,1 @@
+we introduced the sequence encoding the adaptor protein sor-egf into the mhv genome to generate a self-targeted virus capable of multiround infection.

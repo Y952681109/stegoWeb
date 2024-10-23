@@ -1,0 +1,8 @@
+{
+  "ssim": NaN,
+  "psnr": NaN,
+  "acc.identity": NaN,
+  "acc.crop": NaN,
+  "acc.frame_rate": NaN,
+  "acc.mjpeg": NaN
+}

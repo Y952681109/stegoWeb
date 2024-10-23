@@ -1,0 +1,1 @@
+in this study, we created keratinocyte cell lines with cyp40 being stably knocked down using viral particles containing shrna for cyp40 which knocked down the expression level of cyp40 transcripts by 90 to 99%.

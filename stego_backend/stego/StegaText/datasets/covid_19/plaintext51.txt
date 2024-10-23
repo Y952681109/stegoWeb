@@ -1,0 +1,1 @@
+we simulate susceptible-exposed-infectious-removed (seir) epidemics (with no re-infection) over networks with fixed degree sequences but different levels of clustering and compare trees from networks with the same degree sequence and different clustering levels.

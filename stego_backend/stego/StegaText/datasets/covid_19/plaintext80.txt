@@ -1,0 +1,1 @@
+we performed total rna-seq on viral-infected lungs from eight mouse strains, yielding a large data set of transcriptional responses.

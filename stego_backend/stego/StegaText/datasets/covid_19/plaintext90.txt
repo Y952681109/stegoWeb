@@ -1,0 +1,1 @@
+np contains several sequences proposed to act as nuclear localization signals (nlss), and it is not clear how these are overridden to allow cytoplasmic accumulation of the protein.

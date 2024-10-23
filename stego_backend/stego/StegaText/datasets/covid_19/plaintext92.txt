@@ -1,0 +1,1 @@
+results: of 505 children, the non-aom group included 187 and the aom group 318.

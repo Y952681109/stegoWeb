@@ -1,0 +1,802 @@
+#define GLOBAL
+#include "mi2_water.h"
+#include "errordef.h"
+
+#include "stdio.h"
+#include "stdlib.h"
+//������ϢΪ
+//����(һ�ֽ�),ˮӡͷ("##"),ˮӡ
+//���ڵ�һ�������Ĺ켣���һ��midi�¼�����ǰ
+//ÿ����Ϊ00 8x xx xx,���ں������ֽڵĺ���ֽ�?
+////////////////////////////////////////////////////////
+
+int MIDEmdWater2nd(void * pmsg, unsigned short msglen, 
+				   void * psrc, unsigned long srclen, 
+				   void * pdest, unsigned long * pdestlen)
+{
+//===========================================//�������?
+ 	 unsigned short addbytes;//��Ҫ������ֽ���?
+	 unsigned char * w;//ˮӡ
+	 unsigned char	wlen,//ˮӡ+head����
+		temp,track1,track2,head1,head2,head3,head4,type,
+		finishflag=0;//0��ʾû��Ƕ��,1��ʾ��Ƕ��
+	 unsigned int k,t,
+		track;//�켣�������?
+	 unsigned long head,count;
+	 int a,a1,a2;
+ 
+//===========================================//������
+	if((msglen<=0) || (msglen>30))
+	{
+		if(msglen==0)//ˮӡ����Ϊ0
+			return(ERR_EMD_MSGZEROLEN);
+		if(msglen<0)//ˮӡ����С��0����������
+			return(ERR_EMD_PARAWRONG);
+		if(msglen>30)//ˮӡ���ȹ���
+			return(ERR_EMD_MSGMAXLEN);
+	}
+	if(srclen<=0)//���峤��С��0����������
+	{
+		return(ERR_EMD_PARAWRONG);
+	}
+
+//===========================================//׼��ˮӡ������
+	wlen=msglen+2; //ˮӡ+head����
+	w=(unsigned char *)malloc(wlen);
+	if(w==NULL)
+	{
+		return(ERR_EMD_MEMLOW);
+	}
+	strcpy((char *)w,"##");//head
+	memcpy(w+2,pmsg,msglen);//ˮӡ
+	mi2MemReadInit(psrc,srclen);
+
+//	if(((1+wlen)*2)%3==0) //����Ϊһ���ӽ�
+	addbytes=(1+wlen)+16;
+//	else
+//		addbytes=((1+wlen)*2)/3*4+4;
+
+	if((srclen+addbytes)>(*pdestlen))
+	{
+		free(w);
+		return(ERR_EMD_MEMLOW);
+	}
+	(*pdestlen)=(srclen+addbytes);
+	if(addbytes==0)
+	{
+		return(NORMAL);
+	}
+ 	mi2MemWriteInit(pdest,(*pdestlen));
+ 	mi2MemCopyAll();
+	count=0;
+
+//===========================================//����ļ����?
+	if(count==srclen)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVDATA);
+	}
+	mi2MemRead(&temp,1);//�ļ���ʽ����
+	mi2MemWriteSeek(1);
+	count++;
+	if(temp!=0x4d)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVTYPE);
+	}
+	if(count==srclen)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVDATA);
+	}
+	mi2MemRead(&temp,1);//�ļ���ʽ����
+	mi2MemWriteSeek(1);
+	count++;
+	if(temp!=0x54)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVTYPE);
+	}
+	if(count>=srclen)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVDATA);
+	}
+	mi2MemRead(&temp,1);//�ļ���ʽ����
+	mi2MemWriteSeek(1);
+	count++;
+	if(temp!=0x68)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVTYPE);
+	}
+	if(count>=srclen)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVDATA);
+	}
+	mi2MemRead(&temp,1);//�ļ���ʽ����
+	mi2MemWriteSeek(1);
+	count++;
+	if(temp!=0x64)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVTYPE);
+	}
+
+	if((count+3)>=srclen)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVDATA);
+	}
+	a=mi2MemReadSeek(4);
+	if(a!=0)//��4���ֽ�Ҳû��������˵���ļ���ʽ����
+	{
+		free((void*)w);
+		return(ERR_EMD_COVTYPE);
+	}
+	mi2MemWriteSeek(4);
+	count+=4;
+
+	if(count==srclen)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVDATA);
+	}
+	a=mi2MemReadSeek(1);//�ж��ļ�����
+	if(a!=0)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVTYPE);
+	}
+	mi2MemWriteSeek(1);
+	count++;
+	if(count==srclen)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVDATA);
+	}
+	a=mi2MemReadSeek(1);
+	if(a!=0)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVTYPE);
+	}
+	count++;
+	type=1;
+	mi2MemWrite(&type,1);//�޸��ļ����ͣ���Ϊ1
+	
+	if(count==srclen)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVDATA);
+	}
+	a1=mi2MemRead(&track1,1);
+	count++;
+	if(count==srclen)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVDATA);
+	}
+	a2=mi2MemRead(&track2,1);
+	count++;
+	a=a1+a2;
+	if(a<2)//��2���ֽ�Ҳû��������˵���ļ���ʽ����
+	{
+		free((void*)w);
+		return(ERR_EMD_COVTYPE);
+	}
+//	mi2MemWriteSeek(2);
+	track=track1*256+track2;//�켣�����?
+	track++;//�켣���?1����д��ȥ
+	track1=track/256;
+	track2=track%256;
+	mi2MemWrite(&track1,1);
+	mi2MemWrite(&track2,1);
+
+	if((count+1)>=srclen)
+	{
+		free((void*)w);
+		return(ERR_EMD_COVDATA);
+	}
+	mi2MemReadSeek(2);
+	mi2MemWriteSeek(2);
+	count+=2;
+
+//===========================================//Ƕ��ˮӡ
+	//����һ���켣�飬Ҳ����ע�Ϳ飬���е�ע�;���ˮӡ2
+	temp=0x4d;//�켣����?
+	mi2MemWrite(&temp,1);
+	temp=0x54;
+	mi2MemWrite(&temp,1);
+	temp=0x72;
+	mi2MemWrite(&temp,1);
+	temp=0x6b;
+	mi2MemWrite(&temp,1);
+
+	head=(unsigned long)(wlen+1+8);//�켣�鳤��
+	head1=(unsigned char)(head/16777216);
+	head2=(unsigned char)((head-head1*16777216)/65536);
+	head3=(unsigned char)((head-head1*16777216-head2*65536)/256);
+	head4=(unsigned char)(head-head1*16777216-head2*65536-head3*256);
+	mi2MemWrite(&head1,1);
+	mi2MemWrite(&head2,1);
+	mi2MemWrite(&head3,1);
+	mi2MemWrite(&head4,1);
+
+	temp=0;//ffָ��ͷ
+	mi2MemWrite(&temp,1);
+	temp=0xff;
+	mi2MemWrite(&temp,1);
+	temp=1;
+	mi2MemWrite(&temp,1);
+	temp=wlen+1;
+	mi2MemWrite(&temp,1);
+
+	temp=wlen;//Ƕ��ˮӡ
+	mi2MemWrite(&temp,1);
+	for(k=0;k<wlen;k++)
+	{
+		temp=w[k];
+		mi2MemWrite(&temp,1);
+	}
+	
+	temp=0;//�켣��������00 FF 2F 00
+	mi2MemWrite(&temp,1);
+	temp=0xff;
+	mi2MemWrite(&temp,1);
+	temp=0x2f;
+	mi2MemWrite(&temp,1);
+	temp=0;
+	mi2MemWrite(&temp,1);
+
+	t=1;//��ǰ�켣��
+	while(t<track)
+	{
+		if(count==srclen)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVDATA);
+		}
+		mi2MemRead(&temp,1);
+		mi2MemWrite(&temp,1);
+		count++;
+		if(temp!=0x4d)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVTYPE);
+		}
+		if(count==srclen)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVDATA);
+		}
+		mi2MemRead(&temp,1);
+		mi2MemWrite(&temp,1);
+		count++;
+		if(temp!=0x54)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVTYPE);
+		}
+		if(count==srclen)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVDATA);
+		}
+		mi2MemRead(&temp,1);
+		mi2MemWrite(&temp,1);
+		count++;
+		if(temp!=0x72)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVTYPE);
+		}
+		if(count==srclen)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVDATA);
+		}
+		mi2MemRead(&temp,1);
+		mi2MemWrite(&temp,1);
+		count++;
+		if(temp!=0x6b)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVTYPE);
+		}
+
+		if(count==srclen)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVDATA);
+		}
+		mi2MemRead(&head1,1);
+		mi2MemWrite(&head1,1);
+		count++;
+		if(count==srclen)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVDATA);
+		}
+		mi2MemRead(&head2,1);
+		mi2MemWrite(&head2,1);
+		count++;
+		if(count==srclen)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVDATA);
+		}
+		mi2MemRead(&head3,1);
+		mi2MemWrite(&head3,1);
+		count++;
+		if(count==srclen)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVDATA);
+		}
+		mi2MemRead(&head4,1);
+		mi2MemWrite(&head4,1);
+		count++;
+		head=head1*256+head2;
+		head=head*256+head3;
+		head=head*256+head4;//head��¼��ĳ���?
+
+		if((count+head-1)>=srclen)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVDATA);
+		}
+		for(k=1;k<=head;k++)
+		{
+			mi2MemRead(&temp,1);
+			mi2MemWrite(&temp,1);
+		}
+		count+=head;
+		t++;
+	}
+	free((void*)w);
+	return(NORMAL);
+}
+
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-//ˮӡ��ȡ�㷨2
+int MIDExtWater2nd(void * psrc, unsigned long srclen, 
+				   void * pmsg, unsigned short * pmsglen)
+{
+//===========================================//�������?
+	unsigned char* w;//ˮӡ+head
+	unsigned char	wlen,//ˮӡ����
+		beforetemp,temp,track1,track2,head1,head2,head3,head4,
+		flag=0,//0��ʾҪǶ��ˮӡ���ȣ�1��ʾҪǶ��ˮӡ����
+		half=0;//0��ʾǶ���?4λ��1��ʾǶ���?4λ
+	unsigned int k,t,
+		track;//�켣�������?
+	unsigned long head,j,count;
+	int a,a1,a2;
+
+//===========================================//������
+	if(srclen<10)
+	{
+		(*pmsglen)=0;
+		return(ERR_EXT_PARAWRONG);
+	}
+
+//===========================================//׼������
+	w=(unsigned char *)malloc(35);
+	if(w==NULL)
+	{
+		(*pmsglen)=0;
+		return(ERR_EXT_MEMLOW);
+	}
+    mi2MemReadInit(psrc,srclen);
+	count=0;
+
+//===========================================//����ļ����?
+	if(count==srclen)
+	{
+		(*pmsglen)=0;
+		free((void*)w);
+		return(ERR_EXT_COVDATA);
+	}
+	mi2MemRead(&temp,1);
+	count++;
+	if(temp!=0x4d)//�ļ���ʽ����
+	{
+		(*pmsglen)=0;
+		free(w);
+		return(ERR_EXT_COVTYPE);
+	}
+	if(count==srclen)
+	{
+		(*pmsglen)=0;
+		free((void*)w);
+		return(ERR_EXT_COVDATA);
+	}
+	mi2MemRead(&temp,1);
+	count++;
+	if(temp!=0x54)//�ļ���ʽ����
+	{
+		(*pmsglen)=0;
+		free(w);
+		return(ERR_EXT_COVTYPE);
+	}
+	if(count==srclen)
+	{
+		(*pmsglen)=0;
+		free((void*)w);
+		return(ERR_EXT_COVDATA);
+	}
+	mi2MemRead(&temp,1);
+	count++;
+	if(temp!=0x68)//�ļ���ʽ����
+	{
+		(*pmsglen)=0;
+		free(w);
+		return(ERR_EXT_COVTYPE);
+	}
+	if(count==srclen)
+	{
+		(*pmsglen)=0;
+		free((void*)w);
+		return(ERR_EXT_COVDATA);
+	}
+	mi2MemRead(&temp,1);
+	count++;
+	if(temp!=0x64)//�ļ���ʽ����
+	{
+		(*pmsglen)=0;
+		free(w);
+		return(ERR_EXT_COVTYPE);
+	}
+	
+	if((count+5)>=srclen)
+	{
+		(*pmsglen)=0;
+		free((void*)w);
+		return(ERR_EXT_COVDATA);
+	}
+	a=mi2MemReadSeek(6);
+	count+=6;
+	if(a!=0)//��6���ֽ�Ҳû��������˵���ļ���ʽ����
+	{
+		(*pmsglen)=0;
+		free((void*)w);
+		return(ERR_EXT_COVTYPE);
+	}
+
+	if(count==srclen)
+	{
+		(*pmsglen)=0;
+		free((void*)w);
+		return(ERR_EXT_COVDATA);
+	}
+	a1=mi2MemRead(&track1,1);
+	count++;
+	if(count==srclen)
+	{
+		(*pmsglen)=0;
+		free((void*)w);
+		return(ERR_EXT_COVDATA);
+	}
+	a2=mi2MemRead(&track2,1);
+	count++;
+	a=a1+a2;
+	if(a<2)//��2���ֽ�Ҳû��������˵���ļ���ʽ����
+	{
+		(*pmsglen)=0;
+		free((void*)w);
+		return(ERR_EXT_COVTYPE);
+	}
+	track=track1*256+track2;//�켣�����?
+	if((count+1)>=srclen)
+	{
+		(*pmsglen)=0;
+		free((void*)w);
+		return(ERR_EXT_COVDATA);
+	}
+	mi2MemReadSeek(2);
+	count+=2;
+	
+//===========================================//��ȡˮӡ
+	t=0;
+	while(t<track)
+	{
+		if(count==srclen)
+		{
+			(*pmsglen)=0;
+			free((void*)w);
+			return(ERR_EXT_COVDATA);
+		}
+		mi2MemRead(&temp,1);
+		count++;
+		if(temp!=0x4d)
+		{
+			(*pmsglen)=0;
+			free(w);
+			return(ERR_EXT_COVTYPE);
+		}
+		if(count==srclen)
+		{
+			(*pmsglen)=0;
+			free((void*)w);
+			return(ERR_EXT_COVDATA);
+		}
+		mi2MemRead(&temp,1);
+		count++;
+		if(temp!=0x54)
+		{
+			(*pmsglen)=0;
+			free(w);
+			return(ERR_EXT_COVTYPE);
+		}
+		if(count==srclen)
+		{
+			(*pmsglen)=0;
+			free((void*)w);
+			return(ERR_EXT_COVDATA);
+		}
+		mi2MemRead(&temp,1);
+		count++;
+		if(temp!=0x72)
+		{
+			(*pmsglen)=0;
+			free(w);
+			return(ERR_EXT_COVTYPE);
+		}
+		if(count==srclen)
+		{
+			(*pmsglen)=0;
+			free((void*)w);
+			return(ERR_EXT_COVDATA);
+		}
+		mi2MemRead(&temp,1);
+		count++;
+		if(temp!=0x6b)
+		{
+			(*pmsglen)=0;
+			free(w);
+			return(ERR_EXT_COVTYPE);
+		}
+		if(count==srclen)
+		{
+			(*pmsglen)=0;
+			free((void*)w);
+			return(ERR_EXT_COVDATA);
+		}
+		mi2MemRead(&head1,1);
+		count++;
+		if(count==srclen)
+		{
+			(*pmsglen)=0;
+			free((void*)w);
+			return(ERR_EXT_COVDATA);
+		}
+		mi2MemRead(&head2,1);
+		count++;
+		if(count==srclen)
+		{
+			(*pmsglen)=0;
+			free((void*)w);
+			return(ERR_EXT_COVDATA);
+		}
+		mi2MemRead(&head3,1);
+		count++;
+		if(count==srclen)
+		{
+			(*pmsglen)=0;
+			free((void*)w);
+			return(ERR_EXT_COVDATA);
+		}
+		mi2MemRead(&head4,1);
+		count++;
+		head=head1*256+head2;
+		head=head*256+head3;
+		head=head*256+head4;//head��¼��ĳ���?
+
+		j=0;
+		while(j<head-4)//һ�������Ĺ켣�鿪ʼ
+		{
+			if(count==srclen)
+			{
+				free((void*)w);
+				return(ERR_EMD_COVDATA);
+			}
+			mi2MemRead(&temp,1);
+			mi2MemWriteSeek(1);
+			count++;
+			j++;
+
+			if(j<head-4 && (temp & 0x80)==0)//�ǲ����������λ�?0��˵�����ӳ٣�������һ���ֽ�Ӧ��������
+			{
+				beforetemp=temp;
+
+				if(count==srclen)
+				{
+					free((void*)w);
+					return(ERR_EMD_COVDATA);
+				}
+				mi2MemRead(&temp,1);//��������
+				mi2MemWriteSeek(1);
+				count++;
+				j++;
+
+				if(temp==0xf0 || temp==0xf2)//f0,f2����������
+				{
+					if((count+1)>=srclen)
+					{
+						free((void*)w);
+						return(ERR_EMD_COVDATA);
+					}
+					mi2MemReadSeek(2);
+					mi2MemWriteSeek(2);
+					count+=2;
+					j+=2;
+				}
+				if(temp==0xf3)//f3��һ������
+				{
+					if(count==srclen)
+					{
+						free((void*)w);
+						return(ERR_EMD_COVDATA);
+					}
+					mi2MemReadSeek(1);
+					mi2MemWriteSeek(1);
+					count++;
+					j++;
+				}
+				if(temp==0xff)//ff��������ֽڸ���������Ҳ����������ط���ȡˮӡ
+				{
+					if(count==srclen)
+					{
+						free((void*)w);
+						return(ERR_EMD_COVDATA);
+					}
+					mi2MemRead(&temp,1);
+					mi2MemWriteSeek(1);
+					count++;
+					j++;
+					if(temp!=1)//���ָ����û��ˮ�?
+					{
+						if(count==srclen)
+						{
+							free((void*)w);
+							return(ERR_EMD_COVDATA);
+						}
+						mi2MemRead(&beforetemp,1);
+						mi2MemWriteSeek(1);
+						count++;
+						j++;
+						if((count+beforetemp-1)>=srclen)
+						{
+							free((void*)w);
+							return(ERR_EMD_COVDATA);
+						}
+						mi2MemReadSeek(beforetemp);
+						mi2MemWriteSeek(beforetemp);
+						count+=beforetemp;
+						j+=beforetemp;
+					}
+					else//temp==1��ָ�����п�����ˮӡ
+					{
+						if(count==srclen)
+						{
+							free((void*)w);
+							return(ERR_EMD_COVDATA);
+						}
+						mi2MemRead(&beforetemp,1);//ָ��ĳ��ȣ�Ҳ����wlen+1
+						wlen=beforetemp;
+						mi2MemWriteSeek(1);
+						count++;
+						j++;
+						if(count==srclen)
+						{
+							free((void*)w);
+							return(ERR_EMD_COVDATA);
+						}
+						mi2MemRead(&temp,1);//ˮӡ���ȣ�Ҳ����wlen
+						mi2MemWriteSeek(1);
+						count++;
+						j++;
+						if((beforetemp-temp)==1)//�п�����ˮӡ
+						{
+							if(count==srclen)
+							{
+								free((void*)w);
+								return(ERR_EMD_COVDATA);
+							}
+							mi2MemRead(&beforetemp,1);//ˮӡ��־
+							mi2MemWriteSeek(1);
+							count++;
+							j++;
+							if(count==srclen)
+							{
+								free((void*)w);
+								return(ERR_EMD_COVDATA);
+							}
+							mi2MemRead(&temp,1);//ˮӡ��־
+							mi2MemWriteSeek(1);
+							count++;
+							j++;
+							if(beforetemp=='#' && temp=='#')//ȷʵ��ˮӡ
+							{
+								wlen--;
+								for(k=0;k<(unsigned int)(wlen-2);k++)
+								{
+									mi2MemRead(&temp,1);
+									w[k]=temp;
+								}
+								memcpy(pmsg,w,wlen-2);
+								free((void*)w);
+								*pmsglen=wlen-2;
+								return(NORMAL);
+							}
+							else//û��ˮӡ���Ѿ�����ˮӡ��־��
+							{
+								wlen-=3;
+								if((count+wlen-1)>=srclen)
+								{
+									free((void*)w);
+									return(ERR_EMD_COVDATA);
+								}
+								mi2MemReadSeek(wlen);
+								mi2MemWriteSeek(wlen);
+								count+=wlen;
+								j+=wlen;
+							}
+						}
+						else//if((beforetemp-temp)==1)û��ˮӡ���Ѿ�����ˮӡ������
+						{
+							wlen--;
+							if((count+wlen-1)>=srclen)
+							{
+								free((void*)w);
+								return(ERR_EMD_COVDATA);
+							}
+							mi2MemReadSeek(wlen);
+							mi2MemWriteSeek(wlen);
+							count+=wlen;
+							j+=wlen;
+						}
+					}
+				}
+				if(temp>=0xc0 && temp<=0xcf)//cx��һ������
+				{
+					if(count==srclen)
+					{
+						free((void*)w);
+						return(ERR_EMD_COVDATA);
+					}
+					mi2MemReadSeek(1);
+					mi2MemWriteSeek(1);
+					count++;
+					j++;
+				}
+
+				if(temp>=0x80 && temp<=0xbf)//8x,9x,ax,bx����������
+				{
+					if((count+1)>=srclen)
+					{
+						free((void*)w);
+						return(ERR_EMD_COVDATA);
+					}
+					mi2MemReadSeek(2);
+					mi2MemWriteSeek(2);
+					count+=2;
+					j+=2;
+				}//8x,9x,ax,bx
+			}
+		}//while(i<wlen && j<head-4)
+		if((count+(head-j)-1)>=srclen)
+		{
+			free((void*)w);
+			return(ERR_EMD_COVDATA);
+		}
+		mi2MemReadSeek(head-j);
+		mi2MemWriteSeek(head-j);
+		count+=(head-j);
+		t++;
+	}
+	(*pmsglen)=0;
+	free((void*)w);
+	return(ERR_EXT_NOMSG);
+}

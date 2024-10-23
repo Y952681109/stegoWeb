@@ -1,0 +1,3 @@
+/home/song/mid/CMakeFiles/hideme.dir
+/home/song/mid/CMakeFiles/edit_cache.dir
+/home/song/mid/CMakeFiles/rebuild_cache.dir

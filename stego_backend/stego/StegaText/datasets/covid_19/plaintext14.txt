@@ -1,0 +1,1 @@
+globin degradation was insensitive to chloroquine, a drug which inhibits lysosomal proteases, but was inhibited at 16 degrees c suggesting proteolysis occurred during transport to the cis-golgi apparatus.

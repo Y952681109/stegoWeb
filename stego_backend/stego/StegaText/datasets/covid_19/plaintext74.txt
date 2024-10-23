@@ -1,0 +1,1 @@
+the major distinction of sla-1*0401 is that arg(156) has a “one-ballot veto” function in peptide binding, due to its flexible side chain.
